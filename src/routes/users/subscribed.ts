@@ -3,6 +3,8 @@ import { FastifyRequest } from 'fastify/types/request'
 import DB from '../../utils/DB/DB'
 import { UserEntity } from '../../utils/DB/entities/DBUsers'
 
+//TODO это пользователи, которые подписаны на текущего пользователя.
+
 export async function subscribed(
 	request: FastifyRequest,
 	fastify: { db: DB; httpErrors: HttpErrors },
@@ -35,5 +37,3 @@ export async function subscribed(
 
 	return user as UserEntity
 }
-
-// это пользователи, которые подписаны на текущего пользователя.
