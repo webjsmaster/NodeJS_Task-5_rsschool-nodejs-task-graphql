@@ -98,7 +98,7 @@ export const UsersWithCompleteInfo = new GraphQLObjectType({
 	}),
 })
 
-const UserWithProfileAndPost = new GraphQLObjectType({
+const UserWithProfileAndPost: any = new GraphQLObjectType({
 	name: 'UserWithProfile',
 	description: 'User with profile',
 	fields: () => ({
@@ -124,10 +124,33 @@ const UserWithProfileAndPost = new GraphQLObjectType({
 				})
 			},
 		},
+		userSubscribedTo: {
+			type: new GraphQLList(UserWithProfileAndPost),
+			resolve: async (user: UserEntity, args, fastify: { db: DB }) => {
+				async function t() {
+					return user.subscribedToUserIds.map((subUser) => {
+						return fastify.db.users.findOne({
+							key: 'id',
+							equals: subUser,
+						})
+					})
+				}
+				return await t()
+			},
+		},
+		subscribedToUser: {
+			type: new GraphQLList(UserWithProfileAndPost),
+			resolve: async (user: UserEntity, args, fastify: { db: DB }) => {
+				return await fastify.db.users.findMany({
+					key: 'subscribedToUserIds',
+					inArray: user.id,
+				})
+			},
+		},
 	}),
 })
 
-export const UsersWithSubscribedToWithProfile = new GraphQLObjectType({
+export const UsersSubscribed = new GraphQLObjectType({
 	name: 'UsersWithSubscribedToWithProfile',
 	description: '2.5 Get users with their userSubscribedTo, profile',
 	fields: () => ({
@@ -149,17 +172,6 @@ export const UsersWithSubscribedToWithProfile = new GraphQLObjectType({
 				return await t()
 			},
 		},
-	}),
-})
-
-export const UserWithSubscribedToUserWithPost = new GraphQLObjectType({
-	name: 'UserWithSubscribedToUserWithPost',
-	description: '2.6 Get user by id with his subscribedToUser, posts',
-	fields: () => ({
-		id: { type: new GraphQLNonNull(GraphQLID) },
-		firstName: { type: GraphQLString },
-		lastName: { type: GraphQLString },
-		email: { type: GraphQLString },
 		subscribedToUser: {
 			type: new GraphQLList(UserWithProfileAndPost),
 			resolve: async (user: UserEntity, args, fastify: { db: DB }) => {
@@ -172,6 +184,35 @@ export const UserWithSubscribedToUserWithPost = new GraphQLObjectType({
 	}),
 })
 
+// export const SubscribeType = new GraphQLObjectType({
+// 	name: 'SubscribeType',
+// 	description: 'Subscribe Type data',
+// 	fields: () => ({
+// 		id: { type: new GraphQLNonNull(GraphQLID) },
+// 		userId: { type: new GraphQLNonNull(GraphQLID) },
+// 	}),
+// })
+
+// export const UserWithSubscribedToUserWithPost = new GraphQLObjectType({
+// 	name: 'UserWithSubscribedToUserWithPost',
+// 	description: '2.6 Get user by id with his subscribedToUser, posts',
+// 	fields: () => ({
+// 		id: { type: new GraphQLNonNull(GraphQLID) },
+// 		firstName: { type: GraphQLString },
+// 		lastName: { type: GraphQLString },
+// 		email: { type: GraphQLString },
+// 		subscribedToUser: {
+// 			type: new GraphQLList(UserWithProfileAndPost),
+// 			resolve: async (user: UserEntity, args, fastify: { db: DB }) => {
+// 				return await fastify.db.users.findMany({
+// 					key: 'subscribedToUserIds',
+// 					inArray: user.id,
+// 				})
+// 			},
+// 		},
+// 	}),
+// })
+
 export const TestType = new GraphQLObjectType({
 	name: 'Test',
 	description: 'User data',
@@ -179,13 +220,3 @@ export const TestType = new GraphQLObjectType({
 		id: { type: new GraphQLNonNull(GraphQLID) },
 	}),
 })
-
-// const CreatePostType = new GraphQLObjectType({
-// 	name: 'CreatePost',
-// 	description: 'Create User',
-// 	fields: () => ({
-// 		firstName: { type: GraphQLString },
-// 		lastName: { type: GraphQLString },
-// 		email: { type: GraphQLString },
-// 	}),
-// })

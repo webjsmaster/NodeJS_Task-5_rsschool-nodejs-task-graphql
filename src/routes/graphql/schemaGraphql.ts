@@ -13,10 +13,9 @@ import {
 	PostType,
 	ProfileType,
 	TestType,
+	UsersSubscribed,
 	UsersWithCompleteInfo,
-	UsersWithSubscribedToWithProfile,
 	UserType,
-	UserWithSubscribedToUserWithPost,
 } from './typesSchemaGql'
 
 const queryType = new GraphQLObjectType({
@@ -120,17 +119,16 @@ const queryType = new GraphQLObjectType({
 				}
 			},
 		},
-		usersWithSubscribedToWithProfile: {
+		usersSubscribed: {
 			type: new GraphQLNonNull(
-				new GraphQLList(new GraphQLNonNull(UsersWithSubscribedToWithProfile)),
+				new GraphQLList(new GraphQLNonNull(UsersSubscribed)),
 			),
 			resolve: async ({ getAllUsers }) => {
 				return await getAllUsers()
 			},
 		},
-
-		userWithSubscribedToUserWithPost: {
-			type: new GraphQLNonNull(UserWithSubscribedToUserWithPost),
+		userSubscribed: {
+			type: new GraphQLNonNull(UsersSubscribed),
 			args: {
 				id: { type: new GraphQLNonNull(GraphQLString) },
 			},
@@ -187,6 +185,145 @@ const mutationType = new GraphQLObjectType({
 				return await createPost(args)
 			},
 		},
+		updateUser: {
+			type: UserType,
+			args: {
+				id: { type: new GraphQLNonNull(GraphQLString) },
+				firstName: { type: new GraphQLNonNull(GraphQLString) },
+				lastName: { type: new GraphQLNonNull(GraphQLString) },
+				email: { type: new GraphQLNonNull(GraphQLString) },
+			},
+			resolve: async ({ updateUser }, args, fastify: FastifyInstance) => {
+				const user = await fastify.db.users.findOne({
+					key: 'id',
+					equals: args.id,
+				})
+				if (user) {
+					return await updateUser(args.id, args)
+				} else {
+					throw new Error('User not found')
+				}
+			},
+		},
+		updateProfile: {
+			type: ProfileType,
+			args: {
+				id: { type: new GraphQLNonNull(GraphQLString) },
+				avatar: { type: new GraphQLNonNull(GraphQLString) },
+				sex: { type: new GraphQLNonNull(GraphQLString) },
+				birthday: { type: new GraphQLNonNull(GraphQLInt) },
+				country: { type: new GraphQLNonNull(GraphQLString) },
+				street: { type: new GraphQLNonNull(GraphQLString) },
+				city: { type: new GraphQLNonNull(GraphQLString) },
+				memberTypeId: { type: new GraphQLNonNull(GraphQLString) },
+				userId: { type: new GraphQLNonNull(GraphQLID) },
+			},
+			resolve: async ({ updateProfile }, args, fastify: FastifyInstance) => {
+				const profile = await fastify.db.profiles.findOne({
+					key: 'id',
+					equals: args.id,
+				})
+				if (profile) {
+					return await updateProfile(args.id, args)
+				} else {
+					throw new Error('Profile not found')
+				}
+			},
+		},
+		updatePost: {
+			type: PostType,
+			args: {
+				id: { type: new GraphQLNonNull(GraphQLString) },
+				title: { type: new GraphQLNonNull(GraphQLString) },
+				content: { type: new GraphQLNonNull(GraphQLString) },
+				userId: { type: new GraphQLNonNull(GraphQLString) },
+			},
+			resolve: async ({ updatePost }, args, fastify: FastifyInstance) => {
+				const post = await fastify.db.posts.findOne({
+					key: 'id',
+					equals: args.id,
+				})
+				if (post) {
+					return await updatePost(args.id, args)
+				} else {
+					throw new Error('Post not found')
+				}
+			},
+		},
+		updateMemberType: {
+			type: MemberTypeType,
+			args: {
+				id: { type: new GraphQLNonNull(GraphQLString) },
+				discount: { type: new GraphQLNonNull(GraphQLInt) },
+				monthPostsLimit: { type: new GraphQLNonNull(GraphQLInt) },
+			},
+			resolve: async ({ updateMemberType }, args, fastify: FastifyInstance) => {
+				const memberType = await fastify.db.memberTypes.findOne({
+					key: 'id',
+					equals: args.id,
+				})
+				if (memberType) {
+					return await updateMemberType(args.id, args)
+				} else {
+					throw new Error('Member Type not found')
+				}
+			},
+		},
+
+		subscribe: {
+			type: UserType,
+			args: {
+				id: { type: new GraphQLNonNull(GraphQLString) },
+				userId: { type: new GraphQLNonNull(GraphQLString) },
+			},
+			resolve: async (_, args, fastify: FastifyInstance) => {
+				const userSubscribed = await fastify.db.users.findOne({
+					key: 'id',
+					equals: args.userId,
+				})
+				const user = await fastify.db.users.findOne({
+					key: 'id',
+					equals: args.id,
+				})
+				if (!user) throw new Error('User not found')
+
+				if (userSubscribed?.subscribedToUserIds.indexOf(args.id) === -1) {
+					userSubscribed?.subscribedToUserIds.push(args.id)
+				} else {
+					throw new Error('The user is already subscribed')
+				}
+
+				return fastify.db.users.change(args.userId, {
+					subscribedToUserIds: userSubscribed?.subscribedToUserIds,
+				})
+			},
+		},
+
+		unsubscribe: {
+			type: UserType,
+			args: {
+				id: { type: new GraphQLNonNull(GraphQLString) },
+				userId: { type: new GraphQLNonNull(GraphQLString) },
+			},
+			resolve: async (_, args, fastify: FastifyInstance) => {
+				const user = await fastify.db.users.findOne({
+					key: 'id',
+					equals: args.userId,
+				})
+				let subscribedToUserIds: string[]
+				if (user?.subscribedToUserIds.indexOf(args.id) !== -1) {
+					subscribedToUserIds = user?.subscribedToUserIds.filter(
+						(uId) => uId !== args.id,
+					) as string[]
+				} else {
+					throw new Error('User not in subscriptions')
+				}
+				return await fastify.db.users.change(args.userId, {
+					subscribedToUserIds: subscribedToUserIds,
+				})
+			},
+		},
+
 		test: {
 			type: TestType,
 			resolve: async (root, args, fastify: FastifyInstance) => {

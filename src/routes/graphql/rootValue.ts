@@ -1,4 +1,5 @@
 import DB from '../../utils/DB/DB'
+import { MemberTypeEntity } from '../../utils/DB/entities/DBMemberTypes'
 import { PostEntity } from '../../utils/DB/entities/DBPosts'
 import { ProfileEntity } from '../../utils/DB/entities/DBProfiles'
 import { UserEntity } from '../../utils/DB/entities/DBUsers'
@@ -6,6 +7,11 @@ import { UserEntity } from '../../utils/DB/entities/DBUsers'
 type CreateUserDTO = Omit<UserEntity, 'id' | 'subscribedToUserIds'>
 type CreateProfileDTO = Omit<ProfileEntity, 'id'>
 type CreatePostDTO = Omit<PostEntity, 'id'>
+
+type ChangeUserDTO = Partial<Omit<UserEntity, 'id'>>
+type ChangeProfileDTO = Partial<Omit<ProfileEntity, 'id' | 'userId'>>
+type ChangePostDTO = Partial<Omit<PostEntity, 'id' | 'userId'>>
+type ChangeMemberTypeDTO = Partial<Omit<MemberTypeEntity, 'id'>>
 
 export function RootValue(fastify: { db: DB }) {
 	const rootValue = {
@@ -41,6 +47,18 @@ export function RootValue(fastify: { db: DB }) {
 		},
 		createPost: async (data: CreatePostDTO) => {
 			return await fastify.db.posts.create(data)
+		},
+		updateUser: async (id: string, data: ChangeUserDTO) => {
+			return await fastify.db.users.change(id, data)
+		},
+		updateProfile: async (id: string, data: ChangeProfileDTO) => {
+			return await fastify.db.profiles.change(id, data)
+		},
+		updatePost: async (id: string, data: ChangePostDTO) => {
+			return await fastify.db.posts.change(id, data)
+		},
+		updateMemberType: async (id: string, data: ChangeMemberTypeDTO) => {
+			return await fastify.db.memberTypes.change(id, data)
 		},
 	}
 
