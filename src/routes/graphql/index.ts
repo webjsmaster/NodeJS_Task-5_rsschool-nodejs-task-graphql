@@ -34,8 +34,3 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
 }
 
 export default plugin
-
-// 2.2. Get user, profile, post, memberType by id - 4 operations in one query какой все-таки правильный вариант:
-// 1. принимаем один id и по нему ищем во всех сущностях
-// или
-// 2. принимаем userId, profileId, postId, memberTypeId и ищем в каждой из сущностей по своему id?

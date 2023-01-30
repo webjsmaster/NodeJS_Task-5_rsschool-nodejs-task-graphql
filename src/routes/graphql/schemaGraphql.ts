@@ -12,7 +12,6 @@ import {
 	MemberTypeType,
 	PostType,
 	ProfileType,
-	TestType,
 	UsersSubscribed,
 	UsersWithCompleteInfo,
 	UserType,
@@ -323,100 +322,10 @@ const mutationType = new GraphQLObjectType({
 				})
 			},
 		},
-
-		test: {
-			type: TestType,
-			resolve: async (root, args, fastify: FastifyInstance) => {
-				const user1 = await fastify.db.users.create({
-					email: 'test',
-					firstName: '1',
-					lastName: '1',
-				})
-				const user2 = await fastify.db.users.create({
-					email: 'test',
-					firstName: '2',
-					lastName: '2',
-				})
-				const user3 = await fastify.db.users.create({
-					email: 'test',
-					firstName: '3',
-					lastName: '3',
-				})
-
-				await fastify.db.users.change(user2.id, {
-					subscribedToUserIds: [user1.id, user2.id],
-				})
-
-				await fastify.db.users.change(user3.id, {
-					subscribedToUserIds: [user1.id, user2.id],
-				})
-
-				await fastify.db.profiles.create({
-					userId: user2.id,
-					avatar: 'test',
-					birthday: 34,
-					city: 'test',
-					country: 'test',
-					memberTypeId: 'basic',
-					sex: 'test',
-					street: 'tset',
-				})
-				await fastify.db.profiles.create({
-					userId: user1.id,
-					avatar: 'test',
-					birthday: 34,
-					city: 'test',
-					country: 'test',
-					memberTypeId: 'basic',
-					sex: 'test',
-					street: 'tset',
-				})
-				await fastify.db.profiles.create({
-					userId: user3.id,
-					avatar: 'test',
-					birthday: 34,
-					city: 'test',
-					country: 'test',
-					memberTypeId: 'basic',
-					sex: 'test',
-					street: 'tset',
-				})
-
-				await fastify.db.posts.create({
-					content: 'bla=bal-bal',
-					title: 'Post#1',
-					userId: user1.id,
-				})
-
-				await fastify.db.posts.create({
-					content: 'bla=bal-bal',
-					title: 'Post#2',
-					userId: user2.id,
-				})
-				await fastify.db.posts.create({
-					content: 'bla=bal-bal',
-					title: 'Post#3',
-					userId: user2.id,
-				})
-				await fastify.db.posts.create({
-					content: 'bla=bal-bal',
-					title: 'Post#4',
-					userId: user3.id,
-				})
-			},
-		},
 	}),
 })
 
 export const Schema: GraphQLSchema = new GraphQLSchema({
 	query: queryType,
 	mutation: mutationType,
-	//types: [UserType],
 })
-
-//usersWithSubscribedToWithProfile,
-//В 2.5 нужно вернуть массив Profile тех user у которых в поле subscribedToUserIds есть id запрашиваемого пользователя...
-//Должны быть посты тех, кто подписан на меня, ну или на запрашиваемого пользователя)
-//А вот в 2.7  уже возвращаем user(ов) по этим 2м критериям userSubscribedTo subscribedToUser
-//2.5 - список всех юзеров, для каждого юзера включить список его подписок и его профиль.
-//2.6 - один юзер по айди, со списком его подписчиков и списком его постов
