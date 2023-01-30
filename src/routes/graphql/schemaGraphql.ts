@@ -1,16 +1,18 @@
 import {
+	GraphQLID,
+	GraphQLInt,
 	GraphQLList,
 	GraphQLNonNull,
 	GraphQLObjectType,
 	GraphQLSchema,
 	GraphQLString,
 } from 'graphql'
-import { UserEntity } from '../../utils/DB/entities/DBUsers'
 import {
 	MemberTypeType,
 	PostType,
 	ProfileType,
 	UsersWithCompleteInfo,
+	UsersWithSubscribedToWithProfile,
 	UserType,
 } from './typesSchemaGql'
 
@@ -98,29 +100,29 @@ const queryType = new GraphQLObjectType({
 				new GraphQLList(new GraphQLNonNull(UsersWithCompleteInfo)),
 			),
 			resolve: async ({ getAllUsers }) => {
-				const users: UserEntity[] = await getAllUsers()
-
-				console.log('📢 [schemaGraphql.ts:103]', users)
-
-				// let arr: UserEntity[]
-
-				// users.forEach((user) => {
-				// 	arr.push(user)
-
-				// 	console.log('📢 [schemaGraphql.ts:110]', arr)
-				// })
-
-				let arr = users.map((user) => ({ ...user, test: 'test' }))
-
-				console.log('📢 [schemaGraphql.ts:120]', arr)
-
-				return users
-
-				// if (data) {
-				// 	return data
-				// } else {
-				// 	throw new Error('Member type not found')
-				// }
+				return await getAllUsers()
+			},
+		},
+		userWithCompleteInfo: {
+			type: new GraphQLNonNull(UsersWithCompleteInfo),
+			args: {
+				id: { type: new GraphQLNonNull(GraphQLString) },
+			},
+			resolve: async ({ getOneUser }, args) => {
+				const data = await getOneUser(args)
+				if (data) {
+					return data
+				} else {
+					throw new Error('User not found')
+				}
+			},
+		},
+		usersWithSubscribedToWithProfile: {
+			type: new GraphQLNonNull(
+				new GraphQLList(new GraphQLNonNull(UsersWithSubscribedToWithProfile)),
+			),
+			resolve: async ({ getAllUsers }) => {
+				return await getAllUsers()
 			},
 		},
 	}),
@@ -140,6 +142,33 @@ const mutationType = new GraphQLObjectType({
 				return await createUser(args)
 			},
 		},
+		createProfile: {
+			type: ProfileType,
+			args: {
+				avatar: { type: new GraphQLNonNull(GraphQLString) },
+				sex: { type: new GraphQLNonNull(GraphQLString) },
+				birthday: { type: new GraphQLNonNull(GraphQLInt) },
+				country: { type: new GraphQLNonNull(GraphQLString) },
+				street: { type: new GraphQLNonNull(GraphQLString) },
+				city: { type: new GraphQLNonNull(GraphQLString) },
+				memberTypeId: { type: new GraphQLNonNull(GraphQLString) },
+				userId: { type: new GraphQLNonNull(GraphQLID) },
+			},
+			resolve: async ({ createProfile }, args) => {
+				return await createProfile(args)
+			},
+		},
+		createPost: {
+			type: PostType,
+			args: {
+				title: { type: new GraphQLNonNull(GraphQLString) },
+				content: { type: new GraphQLNonNull(GraphQLString) },
+				userId: { type: new GraphQLNonNull(GraphQLString) },
+			},
+			resolve: async ({ createPost }, args) => {
+				return await createPost(args)
+			},
+		},
 	}),
 })
 
@@ -148,3 +177,10 @@ export const Schema: GraphQLSchema = new GraphQLSchema({
 	mutation: mutationType,
 	//types: [UserType],
 })
+
+//usersWithSubscribedToWithProfile,
+//В 2.5 нужно вернуть массив Profile тех user у которых в поле subscribedToUserIds есть id запрашиваемого пользователя...
+//Должны быть посты тех, кто подписан на меня, ну или на запрашиваемого пользователя)
+//А вот в 2.7  уже возвращаем user(ов) по этим 2м критериям userSubscribedTo subscribedToUser
+//2.5 - список всех юзеров, для каждого юзера включить список его подписок и его профиль.
+//2.6 - один юзер по айди, со списком его подписчиков и списком его постов

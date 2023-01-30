@@ -1,7 +1,11 @@
 import DB from '../../utils/DB/DB'
+import { PostEntity } from '../../utils/DB/entities/DBPosts'
+import { ProfileEntity } from '../../utils/DB/entities/DBProfiles'
 import { UserEntity } from '../../utils/DB/entities/DBUsers'
 
 type CreateUserDTO = Omit<UserEntity, 'id' | 'subscribedToUserIds'>
+type CreateProfileDTO = Omit<ProfileEntity, 'id'>
+type CreatePostDTO = Omit<PostEntity, 'id'>
 
 export function RootValue(fastify: { db: DB }) {
 	const rootValue = {
@@ -31,6 +35,12 @@ export function RootValue(fastify: { db: DB }) {
 		},
 		createUser: async (data: CreateUserDTO) => {
 			return await fastify.db.users.create(data)
+		},
+		createProfile: async (data: CreateProfileDTO) => {
+			return await fastify.db.profiles.create(data)
+		},
+		createPost: async (data: CreatePostDTO) => {
+			return await fastify.db.posts.create(data)
 		},
 	}
 
