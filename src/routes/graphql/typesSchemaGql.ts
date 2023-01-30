@@ -98,7 +98,7 @@ export const UsersWithCompleteInfo = new GraphQLObjectType({
 	}),
 })
 
-const UserWithProfile = new GraphQLObjectType({
+const UserWithProfileAndPost = new GraphQLObjectType({
 	name: 'UserWithProfile',
 	description: 'User with profile',
 	fields: () => ({
@@ -115,6 +115,15 @@ const UserWithProfile = new GraphQLObjectType({
 				})
 			},
 		},
+		posts: {
+			type: new GraphQLList(PostType),
+			resolve: async (user, args, fastify: { db: DB }) => {
+				return await fastify.db.posts.findMany({
+					key: 'userId',
+					equals: user.id,
+				})
+			},
+		},
 	}),
 })
 
@@ -126,17 +135,48 @@ export const UsersWithSubscribedToWithProfile = new GraphQLObjectType({
 		firstName: { type: GraphQLString },
 		lastName: { type: GraphQLString },
 		email: { type: GraphQLString },
-		subscribedToUser: {
-			type: new GraphQLList(UserWithProfile),
+		userSubscribedTo: {
+			type: new GraphQLList(UserWithProfileAndPost),
 			resolve: async (user: UserEntity, args, fastify: { db: DB }) => {
-				return user.subscribedToUserIds.map(async (subUser) => {
-					await fastify.db.users.findOne({
-						key: 'id',
-						equals: subUser,
+				async function t() {
+					return user.subscribedToUserIds.map((subUser) => {
+						return fastify.db.users.findOne({
+							key: 'id',
+							equals: subUser,
+						})
 					})
+				}
+				return await t()
+			},
+		},
+	}),
+})
+
+export const UserWithSubscribedToUserWithPost = new GraphQLObjectType({
+	name: 'UserWithSubscribedToUserWithPost',
+	description: '2.6 Get user by id with his subscribedToUser, posts',
+	fields: () => ({
+		id: { type: new GraphQLNonNull(GraphQLID) },
+		firstName: { type: GraphQLString },
+		lastName: { type: GraphQLString },
+		email: { type: GraphQLString },
+		subscribedToUser: {
+			type: new GraphQLList(UserWithProfileAndPost),
+			resolve: async (user: UserEntity, args, fastify: { db: DB }) => {
+				return await fastify.db.users.findMany({
+					key: 'subscribedToUserIds',
+					inArray: user.id,
 				})
 			},
 		},
+	}),
+})
+
+export const TestType = new GraphQLObjectType({
+	name: 'Test',
+	description: 'User data',
+	fields: () => ({
+		id: { type: new GraphQLNonNull(GraphQLID) },
 	}),
 })
 

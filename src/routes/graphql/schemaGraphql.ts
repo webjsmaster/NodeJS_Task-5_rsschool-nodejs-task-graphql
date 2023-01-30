@@ -1,3 +1,4 @@
+import { FastifyInstance } from 'fastify'
 import {
 	GraphQLID,
 	GraphQLInt,
@@ -11,9 +12,11 @@ import {
 	MemberTypeType,
 	PostType,
 	ProfileType,
+	TestType,
 	UsersWithCompleteInfo,
 	UsersWithSubscribedToWithProfile,
 	UserType,
+	UserWithSubscribedToUserWithPost,
 } from './typesSchemaGql'
 
 const queryType = new GraphQLObjectType({
@@ -125,6 +128,21 @@ const queryType = new GraphQLObjectType({
 				return await getAllUsers()
 			},
 		},
+
+		userWithSubscribedToUserWithPost: {
+			type: new GraphQLNonNull(UserWithSubscribedToUserWithPost),
+			args: {
+				id: { type: new GraphQLNonNull(GraphQLString) },
+			},
+			resolve: async ({ getOneUser }, args) => {
+				const data = await getOneUser(args)
+				if (data) {
+					return data
+				} else {
+					throw new Error('User not found')
+				}
+			},
+		},
 	}),
 })
 
@@ -167,6 +185,87 @@ const mutationType = new GraphQLObjectType({
 			},
 			resolve: async ({ createPost }, args) => {
 				return await createPost(args)
+			},
+		},
+		test: {
+			type: TestType,
+			resolve: async (root, args, fastify: FastifyInstance) => {
+				const user1 = await fastify.db.users.create({
+					email: 'test',
+					firstName: '1',
+					lastName: '1',
+				})
+				const user2 = await fastify.db.users.create({
+					email: 'test',
+					firstName: '2',
+					lastName: '2',
+				})
+				const user3 = await fastify.db.users.create({
+					email: 'test',
+					firstName: '3',
+					lastName: '3',
+				})
+
+				await fastify.db.users.change(user2.id, {
+					subscribedToUserIds: [user1.id, user2.id],
+				})
+
+				await fastify.db.users.change(user3.id, {
+					subscribedToUserIds: [user1.id, user2.id],
+				})
+
+				await fastify.db.profiles.create({
+					userId: user2.id,
+					avatar: 'test',
+					birthday: 34,
+					city: 'test',
+					country: 'test',
+					memberTypeId: 'basic',
+					sex: 'test',
+					street: 'tset',
+				})
+				await fastify.db.profiles.create({
+					userId: user1.id,
+					avatar: 'test',
+					birthday: 34,
+					city: 'test',
+					country: 'test',
+					memberTypeId: 'basic',
+					sex: 'test',
+					street: 'tset',
+				})
+				await fastify.db.profiles.create({
+					userId: user3.id,
+					avatar: 'test',
+					birthday: 34,
+					city: 'test',
+					country: 'test',
+					memberTypeId: 'basic',
+					sex: 'test',
+					street: 'tset',
+				})
+
+				await fastify.db.posts.create({
+					content: 'bla=bal-bal',
+					title: 'Post#1',
+					userId: user1.id,
+				})
+
+				await fastify.db.posts.create({
+					content: 'bla=bal-bal',
+					title: 'Post#2',
+					userId: user2.id,
+				})
+				await fastify.db.posts.create({
+					content: 'bla=bal-bal',
+					title: 'Post#3',
+					userId: user2.id,
+				})
+				await fastify.db.posts.create({
+					content: 'bla=bal-bal',
+					title: 'Post#4',
+					userId: user3.id,
+				})
 			},
 		},
 	}),
